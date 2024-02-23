@@ -2,16 +2,15 @@ import requests
 from viktor import ViktorController
 from viktor.parametrization import ViktorParametrization
 from viktor.geometry import SquareBeam 
-from viktor.views import GeometryView, GeometryResult, GeometryAndDataResult, GeometryAndDataView, DataGroup, DataItem
-from viktor.parametrization import NumberField, OptionField, AutocompleteField
+from viktor.views import GeometryView, GeometryResult, GeometryAndDataResult, GeometryAndDataView, DataGroup, DataItem, Label
+from viktor.parametrization import NumberField, OptionField, AutocompleteField, TextField
 from viktor import Color
-from viktor.geometry import Material
+from viktor.geometry import Material, Point
 from viktor.geometry import Group
 from viktor.geometry import LinearPattern
 from viktor.parametrization import ColorField
 from viktor.parametrization import Text
 
-dev_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDAyMDg3MzUsImV4cCI6MjAxNTU2ODczNSwidG9rZW5fdHlwZSI6ImRldmVsb3Blcl9hY2Nlc3MiLCJmaXJzdF9uYW1lIjoiUGhhbm9zIiwibGFzdF9uYW1lIjoiSGFkamlreXJpYWtvdSIsIm9jY3VwYXRpb24iOiJPdGhlciIsInVzZXJfY29tcGFueSI6IjIwNTAgTWF0ZXJpYWxzIiwidXNlcl9lbWFpbCI6InBoYW5vc0AyMDUwLW1hdGVyaWFscy5jb20ifQ.rrtPvZgV51oZFuWA2N-Ry5j7rO1zo_zcTQsaYVN7FIQ'
 def get_embodied_carbon_and_warming_potential(dev_token, building_type, glazing_percentage, gross_internal_floor_area, materials_type, stories):
     # Get API token
     url = "https://app.2050-materials.com/developer/api/getapitoken/"
@@ -40,10 +39,15 @@ def get_embodied_carbon_and_warming_potential(dev_token, building_type, glazing_
 
 
 class Parametrization(ViktorParametrization):
+    dev_token = TextField('2050 Materials Developper Token')
+
     width = NumberField('Width', min=0, default=30)
     length = NumberField('Length', min=0, default=40)
+
     floors = NumberField("How many floors", variant='slider', min=10, max=40, default=16) 
+
     glazing_ratio = NumberField("Glazing Ratio", variant='slider', min=1, max=99, default=50) 
+    
     typology = AutocompleteField('Typology options', 
                                  options=["Residential, High-rise", "Residential, Low-rise", "Commercial, High-rise", "Commercial, Low-rise", "Commercial, Fitout", "Industrial, Low-rise", "Farm building", "Outhouse", "School", "Garage", "Cultural building, Low-rise", "Retail (supermarket), Low-rise", "Carport, Low-rise", "Office, High-rise", "Daycare institution, Low-rise", "Detached house", "Factory, Low-rise", "Hospital, Low-rise", "Logistic, High-rise", "Hotel, High-rise", "Multi dwelling, High-rise", "Office (residential building), High-rise", "Sport centre"], 
                                  default='Commercial, High-rise')
@@ -90,8 +94,8 @@ class Controller(ViktorController):
         building = LinearPattern(floor, direction=[0, 0, 1], number_of_elements=params.floors, spacing=3) 
         gia = params.width * params.length * params.floors
 
-        wp_calculated = get_embodied_carbon_and_warming_potential(dev_token=dev_token, building_type=params.typology, glazing_percentage=params.glazing_ratio, gross_internal_floor_area=gia, materials_type=params.material_choice, stories=params.floors)
+        wp_calculated = get_embodied_carbon_and_warming_potential(dev_token=params.dev_token, building_type=params.typology, glazing_percentage=params.glazing_ratio, gross_internal_floor_area=gia, materials_type=params.material_choice, stories=params.floors)
         wp_calculated_datagroup = DataGroup(DataItem('Embodied Carbon (kgCO2e/m2 GIA)',wp_calculated['co2e_per_m2']),DataItem('Warming Potential (°C)',wp_calculated['warming_potential']))
 
-        return GeometryAndDataResult(building, data=wp_calculated_datagroup, labels=)
+        return GeometryAndDataResult(building, data=wp_calculated_datagroup)
 
