@@ -3,7 +3,7 @@ from viktor import ViktorController
 from viktor.parametrization import ViktorParametrization
 from viktor.geometry import SquareBeam 
 from viktor.views import GeometryView, GeometryResult, GeometryAndDataResult, GeometryAndDataView, DataGroup, DataItem
-from viktor.parametrization import NumberField, OptionField
+from viktor.parametrization import NumberField, OptionField, AutocompleteField
 from viktor import Color
 from viktor.geometry import Material
 from viktor.geometry import Group
@@ -41,9 +41,17 @@ def get_embodied_carbon_and_warming_potential(dev_token, building_type, glazing_
 
 class Parametrization(ViktorParametrization):
     width = NumberField('Width', min=0, default=30)
-    length = NumberField('Width', min=0, default=30)
+    length = NumberField('Length', min=0, default=40)
     floors = NumberField("How many floors", variant='slider', min=10, max=40, default=16) 
     glazing_ratio = NumberField("Glazing Ratio", variant='slider', min=1, max=99, default=50) 
+    typology = AutocompleteField('Typology options', 
+                                 options=["Residential, High-rise", "Residential, Low-rise", "Commercial, High-rise", "Commercial, Low-rise", "Commercial, Fitout", "Industrial, Low-rise", "Farm building", "Outhouse", "School", "Garage", "Cultural building, Low-rise", "Retail (supermarket), Low-rise", "Carport, Low-rise", "Office, High-rise", "Daycare institution, Low-rise", "Detached house", "Factory, Low-rise", "Hospital, Low-rise", "Logistic, High-rise", "Hotel, High-rise", "Multi dwelling, High-rise", "Office (residential building), High-rise", "Sport centre"], 
+                                 default='Commercial, High-rise')
+    material_choice = AutocompleteField('Material options', 
+                                options=["Low-carbon, Regenerative materials", "Conventional materials", "High-carbon (Metal, Concrete)"], 
+                                default="Conventional materials")
+
+
 
     building_color = ColorField("Facade Color", default=Color(221, 221, 221)) 
     intro_text = Text( "# 3D Parametric Building App 🏢\n"
@@ -60,7 +68,7 @@ class Controller(ViktorController):
         glass = Material("Glass", color=Color(150, 150, 255))
         facade = Material("Concrete", color=params.building_color) #<-- add color here
 
-        glass_height = (params.glazing_ratio/100)*2
+        glass_height = (params.glazing_ratio/100)*4
         facade_height = (1 - params.glazing_ratio/100)*2
 
         floor_glass = SquareBeam(
@@ -76,14 +84,14 @@ class Controller(ViktorController):
             material=facade
             )
 
-        floor_facade.translate((0, 0, glass_height)) #<-- add this
+        floor_facade.translate((0, 0, 1.5)) #<-- add this
         floor = Group([floor_glass, floor_facade])
 
         building = LinearPattern(floor, direction=[0, 0, 1], number_of_elements=params.floors, spacing=3) 
         gia = params.width * params.length * params.floors
 
-        wp_calculated = get_embodied_carbon_and_warming_potential(dev_token=dev_token, building_type='Residential, High-rise', glazing_percentage=params.glazing_ratio, gross_internal_floor_area=gia, materials_type='High-carbon (Metal, Concrete)', stories=params.floors)
+        wp_calculated = get_embodied_carbon_and_warming_potential(dev_token=dev_token, building_type=params.typology, glazing_percentage=params.glazing_ratio, gross_internal_floor_area=gia, materials_type=params.material_choice, stories=params.floors)
         wp_calculated_datagroup = DataGroup(DataItem('Embodied Carbon (kgCO2e/m2 GIA)',wp_calculated['co2e_per_m2']),DataItem('Warming Potential (°C)',wp_calculated['warming_potential']))
 
-        return GeometryAndDataResult(building, data=wp_calculated_datagroup)
+        return GeometryAndDataResult(building, data=wp_calculated_datagroup, labels=)
 
