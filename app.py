@@ -1,6 +1,6 @@
 import requests
 from viktor import ViktorController
-from viktor.parametrization import ViktorParametrization
+from viktor.parametrization import ViktorParametrization, LineBreak, Image
 from viktor.geometry import SquareBeam 
 from viktor.views import GeometryView, GeometryResult, GeometryAndDataResult, GeometryAndDataView, DataGroup, DataItem, Label
 from viktor.parametrization import NumberField, OptionField, AutocompleteField, TextField
@@ -39,15 +39,22 @@ def get_embodied_carbon_and_warming_potential(dev_token, building_type, glazing_
 
 
 class Parametrization(ViktorParametrization):
-    dev_token = TextField('2050 Materials Developper Token')
+    img = Image(path="logo.png", max_width=200, align='center')
+    intro_text = Text( "# 3D Parametric Building App 🏢\n"
+                      "This app was developed by [2050 Materials](https://2050-materials.com/sustainability-data-api/). To use the full functionality, please generate a developer token on your account page on the 2050 Materials [Platform](https://app.2050-materials.com/accounts/edit-account/).")
+    main_text = Text("In this app, the user can change the dimensions of the building, choose the amount of floors and a color for the facade. The app will generate a 3D building and a carbon footprint for the user as output.")
+
+    dev_token = TextField('2050 Materials Developper Token', flex=70)
+    lb1 = LineBreak()
 
     width = NumberField('Width', min=0, default=30)
     length = NumberField('Length', min=0, default=40)
+    lb2 = LineBreak()
 
     floors = NumberField("How many floors", variant='slider', min=10, max=40, default=16) 
-
     glazing_ratio = NumberField("Glazing Ratio", variant='slider', min=1, max=99, default=50) 
-    
+    lb3 = LineBreak()
+
     typology = AutocompleteField('Typology options', 
                                  options=["Residential, High-rise", "Residential, Low-rise", "Commercial, High-rise", "Commercial, Low-rise", "Commercial, Fitout", "Industrial, Low-rise", "Farm building", "Outhouse", "School", "Garage", "Cultural building, Low-rise", "Retail (supermarket), Low-rise", "Carport, Low-rise", "Office, High-rise", "Daycare institution, Low-rise", "Detached house", "Factory, Low-rise", "Hospital, Low-rise", "Logistic, High-rise", "Hotel, High-rise", "Multi dwelling, High-rise", "Office (residential building), High-rise", "Sport centre"], 
                                  default='Commercial, High-rise')
@@ -55,12 +62,7 @@ class Parametrization(ViktorParametrization):
                                 options=["Low-carbon, Regenerative materials", "Conventional materials", "High-carbon (Metal, Concrete)"], 
                                 default="Conventional materials")
 
-
-
     building_color = ColorField("Facade Color", default=Color(221, 221, 221)) 
-    intro_text = Text( "# 3D Parametric Building App 🏢\n"
-    "In this app, the user can change the dimensions of the building, choose the amount of floors and a color for the facade. The app will generate a 3D building and a carbon footprint for the user as output.")
-
 
 class Controller(ViktorController):
     label = "Parametric Building"
@@ -93,9 +95,10 @@ class Controller(ViktorController):
 
         building = LinearPattern(floor, direction=[0, 0, 1], number_of_elements=params.floors, spacing=3) 
         gia = params.width * params.length * params.floors
-
-        wp_calculated = get_embodied_carbon_and_warming_potential(dev_token=params.dev_token, building_type=params.typology, glazing_percentage=params.glazing_ratio, gross_internal_floor_area=gia, materials_type=params.material_choice, stories=params.floors)
-        wp_calculated_datagroup = DataGroup(DataItem('Embodied Carbon (kgCO2e/m2 GIA)',wp_calculated['co2e_per_m2']),DataItem('Warming Potential (°C)',wp_calculated['warming_potential']))
-
+        if params.dev_token:
+            wp_calculated = get_embodied_carbon_and_warming_potential(dev_token=params.dev_token, building_type=params.typology, glazing_percentage=params.glazing_ratio, gross_internal_floor_area=gia, materials_type=params.material_choice, stories=params.floors)
+            wp_calculated_datagroup = DataGroup(DataItem('Embodied Carbon (kgCO2e/m2 GIA)',wp_calculated['co2e_per_m2']),DataItem('Warming Potential (°C)',wp_calculated['warming_potential']))
+        else:
+            wp_calculated_datagroup = DataGroup(DataItem('Requires Token from 2050 Materials',None))
         return GeometryAndDataResult(building, data=wp_calculated_datagroup)
 
