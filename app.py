@@ -42,9 +42,10 @@ class Parametrization(ViktorParametrization):
     img = Image(path="logo.png", max_width=200, align='center')
     intro_text = Text( "# 3D Parametric Building App 🏢\n"
                       "This app was developed by [2050 Materials](https://2050-materials.com/sustainability-data-api/). To use the full functionality, please generate a developer token on your account page on the 2050 Materials [Platform](https://app.2050-materials.com/accounts/edit-account/).")
+    info_text = Text("2050 Materials aims to integrate sustainability into construction by creating a comprehensive database of building materials' climate impact. Our platform supports real-time environmental impact assessments, facilitating greener building practices. For feedback, please visit [2050 Materials Feedback Form](https://app.2050-materials.com/contact/).")
     main_text = Text("In this app, the user can change the dimensions of the building, choose the amount of floors and a color for the facade. The app will generate a 3D building and a carbon footprint for the user as output.")
 
-    dev_token = TextField('2050 Materials Developper Token', flex=70)
+    dev_token = TextField('2050 Materials Developer Token', flex=70)
     lb1 = LineBreak()
 
     width = NumberField('Width', min=0, default=30)
